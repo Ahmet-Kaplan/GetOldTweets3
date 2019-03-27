@@ -13,7 +13,11 @@ Twitter Official API has the bother limitation of time constraints, you can't ge
 I was searching other tools to do this job but I didn't found it, so after analyze how Twitter Search through browser works I understand its flow. Basically when you enter on Twitter page a scroll loader starts, if you scroll down you start to get more and more tweets, all through calls to a JSON provider. After mimic we get the best advantage of Twitter Search on browsers, it can search the deepest oldest tweets.
 
 ## Installation
+<<<<<<< HEAD
 Use `pip install TweetAnalysis`
+=======
+Use `pip install TweetAnalysis`  
+>>>>>>> 60d253499ec743774de4aeb8fd9f3e3370307a2b
 or `pip install -e git+https://github.com/Ahmet-Kaplan/TweetAnalysis#egg=TweetAnalysis`
 
 ## Command line utility
@@ -23,7 +27,11 @@ or `pip install -e git+https://github.com/Ahmet-Kaplan/TweetAnalysis#egg=TweetAn
 **Get help:**
 ``` bash
 TweetAnalysis -h
+<<<<<<< HEAD
 ```
+=======
+``` 
+>>>>>>> 60d253499ec743774de4aeb8fd9f3e3370307a2b
 
 **Get tweets by username:**
 ``` bash
