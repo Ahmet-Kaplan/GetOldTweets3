@@ -1,9 +1,11 @@
-# -*- coding: utf-8 -*-
-
-import json, re, datetime, sys, random, http.cookiejar
-import urllib.request, urllib.parse, urllib.error
-from pyquery import PyQuery
+import urllib.request, urllib.parse, urllib.error, urllib.request, urllib.error, urllib.parse, json, re
+import datetime, sys, http.cookiejar
 from .. import models
+from pyquery import PyQuery
+import logging
+import random
+
+TMlogger = logging.getLogger('TM')
 
 class TweetManager:
     """A class for accessing the Twitter's search engine"""
@@ -34,6 +36,7 @@ class TweetManager:
         proxy: str, a proxy server to use
         debug: bool, output debug information
         """
+        TMlogger.info('getTweets * Entered*')
         results = []
         resultsAux = []
         cookieJar = http.cookiejar.CookieJar()
@@ -56,6 +59,7 @@ class TweetManager:
         for batch in range(n_batches):  # process all_usernames by batches
             refreshCursor = ''
             batch_cnt_results = 0
+            type_of_tweet = 0
 
             if all_usernames:  # a username in the criteria?
                 tweetCriteria.username = all_usernames[batch*usernames_per_batch:batch*usernames_per_batch+usernames_per_batch]
@@ -79,20 +83,51 @@ class TweetManager:
                     tweetPQ = PyQuery(tweetHTML)
                     tweet = models.Tweet()
 
+
                     usernames = tweetPQ("span.username.u-dir b").text().split()
                     if not len(usernames):  # fix for issue #13
                         continue
+
+                    if (tweetPQ("div").attr("data-is-reply-to")=="true"):
+                        type_of_tweet = 3
+                    else:
+                        type_of_tweet = 0
+
+                    tweet.type = type_of_tweet
+
+                    tweet.full_html = tweetPQ("p.js-tweet-text")
+                    text_and_emoji = ""
+                    alts = []
+                    for image in tweetPQ("img"):
+                        try:
+                            alt = image.attrib["alt"]
+                            if (type(alt) is str and alt != ""):
+                                alt = alt.encode("unicode-escape").decode("utf-8","strict")
+                                alt = alt.replace("000", "").upper()
+                                alt = alt.replace("\\U", "/U+")
+                                text_and_emoji  = text_and_emoji + alt + " "
+                                alts.append(alt)
+                        except KeyError:
+                        	pass
+
+                    tweet.emojis = []
+                    if (len(alts) is not 0):
+                        tweet.emojis = alts
+
+                    tweet.language = tweetPQ("p.js-tweet-text").attr("lang")
 
                     tweet.username = usernames[0]
                     tweet.to = usernames[1] if len(usernames) >= 2 else None  # take the first recipient if many
                     tweet.text = re.sub(r"\s+", " ", tweetPQ("p.js-tweet-text").text())\
                         .replace('# ', '#').replace('@ ', '@').replace('$ ', '$')
+
                     tweet.retweets = int(tweetPQ("span.ProfileTweet-action--retweet span.ProfileTweet-actionCount").attr("data-tweet-stat-count").replace(",", ""))
                     tweet.favorites = int(tweetPQ("span.ProfileTweet-action--favorite span.ProfileTweet-actionCount").attr("data-tweet-stat-count").replace(",", ""))
                     tweet.replies = int(tweetPQ("span.ProfileTweet-action--reply span.ProfileTweet-actionCount").attr("data-tweet-stat-count").replace(",", ""))
                     tweet.id = tweetPQ.attr("data-tweet-id")
                     tweet.permalink = 'https://twitter.com' + tweetPQ.attr("data-permalink-path")
                     tweet.author_id = int(tweetPQ("a.js-user-profile-link").attr("data-user-id"))
+                    tweet.conversationId = tweetPQ.attr("data-conversation-id")
 
                     dateSec = int(tweetPQ("small.time span.js-short-timestamp").attr("data-time"))
                     tweet.date = datetime.datetime.fromtimestamp(dateSec, tz=datetime.timezone.utc)
@@ -118,7 +153,10 @@ class TweetManager:
 
                     results.append(tweet)
                     resultsAux.append(tweet)
-                    
+
+                    if len(results) % 100 == 0:
+                        TMlogger.info('Got %i tweets', len(results))
+
                     if receiveBuffer and len(resultsAux) >= bufferLength:
                         receiveBuffer(resultsAux)
                         resultsAux = []
@@ -131,7 +169,6 @@ class TweetManager:
             if receiveBuffer and len(resultsAux) > 0:
                 receiveBuffer(resultsAux)
                 resultsAux = []
-
         return results
 
     @staticmethod
@@ -204,6 +241,10 @@ class TweetManager:
             response = opener.open(url)
             jsonResponse = response.read()
         except Exception as e:
+            TMlogger.info('Exception * Entered*')
+            TMlogger.error("Exception occurred", exc_info=True)
+            TMlogger.error('Response[%s]', response)
+
             print("An error occured during an HTTP request:", str(e))
             print("Try to open in browser: https://twitter.com/search?q=%s&src=typd" % urllib.parse.quote(urlGetData))
             sys.exit()

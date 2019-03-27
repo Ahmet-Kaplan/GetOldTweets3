@@ -7,18 +7,18 @@ with open("requirements.txt", "r") as fh:
     INSTALL_REQUIRES = [l.split('#')[0].strip() for l in fh if not l.strip().startswith('#')]
 
 setuptools.setup(
-    name="GetOldTweets3",
-    version="0.0.9",
-    author="Dmitry Mottl",
-    author_email="dmitry.mottl@gmail.com",
+    name="TweetAnalysis",
+    version="0.1.0",
+    author="Ahmet Kaplan",
+    author_email="kaplan38@gmail.com",
     license='MIT',
-    description="Get old tweets from Twitter",
+    description="Get old tweets from Twitter and save to DB",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/Mottl/GetOldTweets3",
+    url="https://github.com/Ahmet-Kaplan/TweetAnalysis",
     keywords="twitter tweets",
     packages=setuptools.find_packages(),
-    scripts=['bin/GetOldTweets3'],
+    scripts=['bin/TweetAnalysis'],
     classifiers=[
         "Environment :: Console",
         "Programming Language :: Python :: 3",
